@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>數據完整性與約束 · Data Integrity &amp; Constraints</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={darkMode:'class',theme:{extend:{}}}</script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+HK:wght@300;400;500;700&family=Noto+Serif+HK:wght@400;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+ :root{ color-scheme:light dark; --ac:#8b5cf6; }
+ body{ font-family:'Noto Sans HK',sans-serif; line-height:1.6; -webkit-font-smoothing:antialiased; transition:background-color .3s; }
+ .serif-font{ font-family:'Noto Serif HK',serif; } .mono{ font-family:'JetBrains Mono',ui-monospace,monospace; }
+ .bp-surface{ background-color:#eaeef3; background-image:linear-gradient(rgba(37,99,235,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,.05) 1px,transparent 1px),linear-gradient(rgba(37,99,235,.10) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,.10) 1px,transparent 1px); background-size:26px 26px,26px 26px,130px 130px,130px 130px; }
+ body.dark .bp-surface{ background-color:#0a1626; background-image:linear-gradient(rgba(56,189,248,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.06) 1px,transparent 1px),linear-gradient(rgba(56,189,248,.11) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.11) 1px,transparent 1px); background-size:26px 26px,26px 26px,130px 130px,130px 130px; }
+ .bp-panel{ position:relative;border:1px solid #c3ccd8;border-radius:3px;background:linear-gradient(rgba(255,255,255,.78),rgba(255,255,255,.78)); }
+ body.dark .bp-panel{ border-color:#2c3e57;background:linear-gradient(rgba(13,25,43,.6),rgba(13,25,43,.6)); }
+ .tk{ position:absolute;width:10px;height:10px;color:var(--ac);opacity:.6;pointer-events:none; }
+ .tk.tl{ top:6px;left:6px;border-top:1.5px solid;border-left:1.5px solid; } .tk.tr{ top:6px;right:6px;border-top:1.5px solid;border-right:1.5px solid; }
+ .tk.bl{ bottom:6px;left:6px;border-bottom:1.5px solid;border-left:1.5px solid; } .tk.br{ bottom:6px;right:6px;border-bottom:1.5px solid;border-right:1.5px solid; }
+ .bp-bar{ position:fixed;top:12px;z-index:2147483647;display:inline-flex;align-items:center;gap:8px; }
+ .bp-btn{ display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:6px;border:1px solid #c3ccd8;background:rgba(255,255,255,.85);color:#334155;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.06em;text-decoration:none;cursor:pointer;box-shadow:0 2px 10px rgba(2,6,23,.12);transition:border-color .2s,color .2s; }
+ .bp-btn:hover{ border-color:var(--ac);color:#0f172a; } body.dark .bp-btn{ background:rgba(10,22,38,.85);border-color:#2c3e57;color:#cbd5e1; } body.dark .bp-btn:hover{ border-color:var(--ac);color:#fff; }
+ table.db{ border-collapse:collapse;width:100%;font-family:'JetBrains Mono',monospace;font-size:.76rem; }
+ table.db th,table.db td{ border:1px solid #c3ccd8;padding:4px 8px;text-align:left; } body.dark table.db th,body.dark table.db td{ border-color:#2c3e57; }
+ table.db th{ background:rgba(139,92,246,.1);font-weight:700; }
+ .inp{ width:100%;padding:6px 9px;border:1px solid #c3ccd8;border-radius:6px;background:transparent;font-family:'JetBrains Mono',monospace;font-size:.82rem;color:inherit; } body.dark .inp{ border-color:#2c3e57; }
+ .inp:focus{ outline:none;border-color:var(--ac); }
+ .con{ display:flex;align-items:center;gap:7px;padding:5px 2px;border-bottom:1px dashed #c3ccd8;font-size:.78rem; } body.dark .con{ border-color:#2c3e57; }
+</style>
+</head>
+<body class="dark bp-surface text-slate-800 dark:text-slate-200 p-4 select-none min-h-screen">
+
+<a href="../../ict.html" class="bp-bar bp-btn" style="left:12px"><i data-lucide="home" width="15" height="15"></i><span>INDEX</span></a>
+<div class="bp-bar" style="right:12px">
+  <button onclick="toggleTheme()" class="bp-btn"><span id="theme-ic"><i data-lucide="sun" width="16" height="16"></i></span></button>
+  <button onclick="toggleLang()" class="bp-btn"><i data-lucide="languages" width="15" height="15"></i><span id="lang-label">EN</span></button>
+</div>
+
+<div class="max-w-4xl mx-auto bp-panel rounded-md shadow-lg overflow-hidden mt-14 sm:mt-2">
+  <span class="tk tl"></span><span class="tk tr"></span><span class="tk bl"></span><span class="tk br"></span>
+  <div class="px-5 py-4 border-b border-slate-300 dark:border-slate-700 flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <span class="mono text-[11px] font-bold tracking-[0.18em] uppercase" style="color:var(--ac)">FIG.42</span>
+      <h1 class="serif-font text-xl sm:text-2xl font-bold text-slate-900 dark:text-white"><span class="lang-zh">數據完整性與約束</span><span class="lang-en hidden">Data Integrity &amp; Constraints</span></h1>
+    </div>
+    <span class="mono hidden sm:inline text-[10.5px] tracking-[0.16em] uppercase text-slate-400 dark:text-slate-500">選修A · Constraints</span>
+  </div>
+
+  <div class="p-5 sm:p-6">
+    <div class="mono text-xs text-slate-400 mb-1">STUDENT</div>
+    <div class="overflow-x-auto mb-4"><table class="db" id="tbl"></table></div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div>
+        <div class="mono text-[10px] tracking-[0.2em] uppercase text-slate-400 mb-2"><span class="lang-zh">插入新記錄 INSERT</span><span class="lang-en hidden">Insert a new record</span></div>
+        <div class="space-y-2">
+          <div><label class="text-xs text-slate-400 mono">StudentID</label><input id="f-id" class="inp" value="S005"></div>
+          <div><label class="text-xs text-slate-400 mono">Name</label><input id="f-name" class="inp" value="林小強 Lam"></div>
+          <div><label class="text-xs text-slate-400 mono">Class</label><input id="f-class" class="inp" value="5A"></div>
+          <div><label class="text-xs text-slate-400 mono">Age</label><input id="f-age" class="inp" value="16"></div>
+        </div>
+        <div class="flex flex-wrap gap-2 mt-3">
+          <button onclick="doInsert()" class="bp-btn" style="border-color:var(--ac)"><i data-lucide="database" width="14" height="14"></i>INSERT</button>
+        </div>
+        <div class="mt-2 text-[11px] text-slate-400 mono"><span class="lang-zh">試試這些:</span><span class="lang-en hidden">Try:</span></div>
+        <div class="flex flex-wrap gap-1.5 mt-1" id="presets"></div>
+      </div>
+
+      <div>
+        <div class="mono text-[10px] tracking-[0.2em] uppercase text-slate-400 mb-2"><span class="lang-zh">約束檢查</span><span class="lang-en hidden">Constraint checks</span></div>
+        <div id="cons"></div>
+        <div id="verdict" class="mt-3 text-sm font-bold" style="min-height:1.6rem"></div>
+      </div>
+    </div>
+
+    <div class="mt-4 text-xs text-slate-500 dark:text-slate-400 leading-relaxed border-t border-slate-300 dark:border-slate-700 pt-3">
+      <span class="lang-zh"><b style="color:var(--ac)">完整性約束</b>是數據庫自動執行的規則,確保資料有效:<b>實體完整性</b> — 主鍵不可重複、不可留空;<b>域約束 (domain)</b> — 值須屬合法範圍／類型 (如 Age 11–25);<b>格式</b> — 如 StudentID 須為 S + 三位數字;<b>NOT NULL</b> — 必填欄不可留空。任何一項不符,INSERT 都會被<b>拒絕</b>,以維持資料<b>準確一致</b>。</span>
+      <span class="lang-en hidden"><b style="color:var(--ac)">Integrity constraints</b> are rules the database enforces automatically to keep data valid: <b>entity integrity</b> — the primary key must be unique and not null; <b>domain</b> — values must be of the right type/range (e.g. Age 11–25); <b>format</b> — e.g. StudentID must be S + three digits; <b>NOT NULL</b> — required fields can\'t be blank. If any check fails, the INSERT is <b>rejected</b> to keep data <b>accurate and consistent</b>.</span>
+    </div>
+  </div>
+</div>
+
+<script>
+ let __isDark=true,__lang='zh';
+ function applyLang(){document.querySelectorAll('.lang-zh').forEach(e=>e.classList.toggle('hidden',__lang!=='zh'));document.querySelectorAll('.lang-en').forEach(e=>e.classList.toggle('hidden',__lang!=='en'));}
+ function toggleTheme(){__isDark=!__isDark;document.body.classList.toggle('dark',__isDark);document.getElementById('theme-ic').innerHTML=`<i data-lucide="${__isDark?'sun':'moon'}" width="16" height="16"></i>`;if(window.lucide)lucide.createIcons();}
+ function toggleLang(){__lang=__lang==='zh'?'en':'zh';document.getElementById('lang-label').textContent=__lang==='zh'?'EN':'中';applyLang();renderTable();renderCons(last);}
+</script>
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const CLASSES=['5A','5B','5C'];
+  let ROWS=[['S001','陳大文 Chan','5A','16'],['S002','李小明 Lee','5A','17'],['S003','王美華 Wong','5B','16'],['S004','張志強 Cheung','5C','17']];
+  let last=null;
+
+  function renderTable(){
+    let h='<thead><tr><th>StudentID 🔑</th><th>Name</th><th>Class</th><th>Age</th></tr></thead><tbody>';
+    h+=ROWS.map(r=>'<tr>'+r.map(v=>`<td>${v}</td>`).join('')+'</tr>').join('');
+    h+='</tbody>'; $('tbl').innerHTML=h;
+  }
+  function check(id,name,cls,age){
+    return [
+      {k:'pk_format', zh:'StudentID 格式 = S + 三位數字', en:'StudentID format = S + 3 digits', ok:/^S\d{3}$/.test(id)},
+      {k:'pk_unique', zh:'StudentID 不重複 (實體完整性)', en:'StudentID unique (entity integrity)', ok:!ROWS.some(r=>r[0]===id)},
+      {k:'notnull',   zh:'Name 不可留空 (NOT NULL)', en:'Name not null', ok:name.trim()!==''},
+      {k:'dom_class', zh:'Class ∈ {5A,5B,5C} (域約束)', en:'Class in {5A,5B,5C} (domain)', ok:CLASSES.includes(cls.trim())},
+      {k:'dom_age',   zh:'Age 為 11–25 的整數 (域約束)', en:'Age is an integer 11–25 (domain)', ok:/^\d+$/.test(age.trim())&&+age>=11&&+age<=25},
+    ];
+  }
+  function renderCons(res){
+    if(!res){ $('cons').innerHTML=`<span class="text-slate-400 text-sm"><span class="lang-zh ${__lang!=='zh'?'hidden':''}">按 INSERT 檢查約束 ▸</span><span class="lang-en ${__lang!=='en'?'hidden':''}">press INSERT to check ▸</span></span>`; $('verdict').innerHTML=''; return; }
+    $('cons').innerHTML=res.map(c=>`<div class="con"><span style="color:${c.ok?'#10b981':'#f43f5e'};font-weight:700;width:1rem">${c.ok?'✓':'✗'}</span><span class="lang-zh ${__lang!=='zh'?'hidden':''}">${c.zh}</span><span class="lang-en ${__lang!=='en'?'hidden':''}">${c.en}</span></div>`).join('');
+    const ok=res.every(c=>c.ok);
+    $('verdict').innerHTML= ok? `<span style="color:#10b981"><span class="lang-zh ${__lang!=='zh'?'hidden':''}">✓ 通過所有約束 — 記錄已插入。</span><span class="lang-en ${__lang!=='en'?'hidden':''}">✓ all constraints pass — record inserted.</span></span>`
+      : `<span style="color:#f43f5e"><span class="lang-zh ${__lang!=='zh'?'hidden':''}">✗ INSERT 被拒絕 — 違反約束。</span><span class="lang-en ${__lang!=='en'?'hidden':''}">✗ INSERT rejected — constraint violated.</span></span>`;
+  }
+  window.doInsert=()=>{
+    const id=$('f-id').value,name=$('f-name').value,cls=$('f-class').value,age=$('f-age').value;
+    const res=check(id,name,cls,age); last=res; renderCons(res);
+    if(res.every(c=>c.ok)){ ROWS.push([id,name,cls.trim(),age.trim()]); renderTable(); }
+  };
+  const PRESETS=[
+    {zh:'有效記錄',en:'valid',v:['S005','林小強 Lam','5A','16']},
+    {zh:'重複主鍵',en:'dup PK',v:['S001','新同學 New','5B','16']},
+    {zh:'格式錯',en:'bad format',v:['ST5','陳同學 Chan','5A','16']},
+    {zh:'空 Name',en:'null Name',v:['S006','','5A','16']},
+    {zh:'Age 出界',en:'Age out',v:['S007','黃同學 Wong','5A','150']},
+    {zh:'Class 非法',en:'bad Class',v:['S008','趙同學 Chiu','5Z','16']},
+  ];
+  function renderPresets(){ $('presets').innerHTML=PRESETS.map((p,i)=>`<button class="bp-btn" style="padding:4px 9px" data-i="${i}"><span class="lang-zh ${__lang!=='zh'?'hidden':''}">${p.zh}</span><span class="lang-en ${__lang!=='en'?'hidden':''}">${p.en}</span></button>`).join('');
+    $('presets').querySelectorAll('button').forEach(b=>b.onclick=()=>{ const p=PRESETS[+b.dataset.i]; $('f-id').value=p.v[0];$('f-name').value=p.v[1];$('f-class').value=p.v[2];$('f-age').value=p.v[3]; doInsert(); }); }
+
+  renderTable(); renderCons(null); renderPresets();
+  if(window.lucide)lucide.createIcons();
+})();
+</script>
+</body>
+</html>

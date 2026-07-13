@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>聚合查詢與 GROUP BY · Aggregates &amp; GROUP BY</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={darkMode:'class',theme:{extend:{}}}</script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+HK:wght@300;400;500;700&family=Noto+Serif+HK:wght@400;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+ :root{ color-scheme:light dark; --ac:#8b5cf6; }
+ body{ font-family:'Noto Sans HK',sans-serif; line-height:1.6; -webkit-font-smoothing:antialiased; transition:background-color .3s; }
+ .serif-font{ font-family:'Noto Serif HK',serif; } .mono{ font-family:'JetBrains Mono',ui-monospace,monospace; }
+ .bp-surface{ background-color:#eaeef3; background-image:linear-gradient(rgba(37,99,235,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,.05) 1px,transparent 1px),linear-gradient(rgba(37,99,235,.10) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,.10) 1px,transparent 1px); background-size:26px 26px,26px 26px,130px 130px,130px 130px; }
+ body.dark .bp-surface{ background-color:#0a1626; background-image:linear-gradient(rgba(56,189,248,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.06) 1px,transparent 1px),linear-gradient(rgba(56,189,248,.11) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.11) 1px,transparent 1px); background-size:26px 26px,26px 26px,130px 130px,130px 130px; }
+ .bp-panel{ position:relative;border:1px solid #c3ccd8;border-radius:3px;background:linear-gradient(rgba(255,255,255,.78),rgba(255,255,255,.78)); }
+ body.dark .bp-panel{ border-color:#2c3e57;background:linear-gradient(rgba(13,25,43,.6),rgba(13,25,43,.6)); }
+ .tk{ position:absolute;width:10px;height:10px;color:var(--ac);opacity:.6;pointer-events:none; }
+ .tk.tl{ top:6px;left:6px;border-top:1.5px solid;border-left:1.5px solid; } .tk.tr{ top:6px;right:6px;border-top:1.5px solid;border-right:1.5px solid; }
+ .tk.bl{ bottom:6px;left:6px;border-bottom:1.5px solid;border-left:1.5px solid; } .tk.br{ bottom:6px;right:6px;border-bottom:1.5px solid;border-right:1.5px solid; }
+ .bp-bar{ position:fixed;top:12px;z-index:2147483647;display:inline-flex;align-items:center;gap:8px; }
+ .bp-btn{ display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:6px;border:1px solid #c3ccd8;background:rgba(255,255,255,.85);color:#334155;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.06em;text-decoration:none;cursor:pointer;box-shadow:0 2px 10px rgba(2,6,23,.12);transition:border-color .2s,color .2s; }
+ .bp-btn:hover{ border-color:var(--ac);color:#0f172a; } body.dark .bp-btn{ background:rgba(10,22,38,.85);border-color:#2c3e57;color:#cbd5e1; } body.dark .bp-btn:hover{ border-color:var(--ac);color:#fff; }
+ table.db{ border-collapse:collapse;width:100%;font-family:'JetBrains Mono',monospace;font-size:.76rem; }
+ table.db th,table.db td{ border:1px solid #c3ccd8;padding:4px 9px;text-align:left; } body.dark table.db th,body.dark table.db td{ border-color:#2c3e57; }
+ table.db th{ background:rgba(139,92,246,.1);font-weight:700; }
+ .g0{ background:color-mix(in srgb,var(--ac) 8%,transparent); } .g1{ background:color-mix(in srgb,#f59e0b 10%,transparent); } .g2{ background:color-mix(in srgb,#10b981 10%,transparent); }
+ select.sq{ padding:5px 8px;border:1px solid #c3ccd8;border-radius:6px;background:transparent;font-family:'JetBrains Mono',monospace;font-size:.8rem;color:inherit; } body.dark select.sq{ border-color:#2c3e57;background:#0d192b; }
+ .sqlbox{ background:#0d192b;border-radius:8px;padding:10px 13px;font-family:'JetBrains Mono',monospace;font-size:.82rem;color:#cbd5e1;line-height:1.7; } .kw{ color:#c4b5fd;font-weight:700; } .fn{ color:#7dd3fc;font-weight:700; }
+</style>
+</head>
+<body class="dark bp-surface text-slate-800 dark:text-slate-200 p-4 select-none min-h-screen">
+
+<a href="../../ict.html" class="bp-bar bp-btn" style="left:12px"><i data-lucide="home" width="15" height="15"></i><span>INDEX</span></a>
+<div class="bp-bar" style="right:12px">
+  <button onclick="toggleTheme()" class="bp-btn"><span id="theme-ic"><i data-lucide="sun" width="16" height="16"></i></span></button>
+  <button onclick="toggleLang()" class="bp-btn"><i data-lucide="languages" width="15" height="15"></i><span id="lang-label">EN</span></button>
+</div>
+
+<div class="max-w-4xl mx-auto bp-panel rounded-md shadow-lg overflow-hidden mt-14 sm:mt-2">
+  <span class="tk tl"></span><span class="tk tr"></span><span class="tk bl"></span><span class="tk br"></span>
+  <div class="px-5 py-4 border-b border-slate-300 dark:border-slate-700 flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <span class="mono text-[11px] font-bold tracking-[0.18em] uppercase" style="color:var(--ac)">FIG.45</span>
+      <h1 class="serif-font text-xl sm:text-2xl font-bold text-slate-900 dark:text-white"><span class="lang-zh">聚合查詢與 GROUP BY</span><span class="lang-en hidden">Aggregates &amp; GROUP BY</span></h1>
+    </div>
+    <span class="mono hidden sm:inline text-[10.5px] tracking-[0.16em] uppercase text-slate-400 dark:text-slate-500">選修A · Aggregate</span>
+  </div>
+
+  <div class="p-5 sm:p-6">
+    <div class="flex flex-wrap items-center gap-2 mb-3">
+      <span class="mono text-[10px] tracking-[0.2em] uppercase text-slate-400"><span class="lang-zh">函數</span><span class="lang-en hidden">Function</span></span>
+      <select class="sq" id="fn"><option value="COUNT">COUNT</option><option value="SUM">SUM</option><option value="AVG">AVG</option><option value="MAX">MAX</option><option value="MIN">MIN</option></select>
+      <span class="mono text-xs text-slate-400">( Score )</span>
+      <label class="flex items-center gap-1 text-xs ml-2"><input type="checkbox" id="gben"> <span class="mono">GROUP BY</span></label>
+      <select class="sq" id="gbcol"><option value="Class">Class</option><option value="Gender">Gender</option></select>
+    </div>
+
+    <div class="sqlbox mb-4" id="sql"></div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div>
+        <div class="mono text-xs text-slate-400 mb-1">STUDENT</div>
+        <div class="overflow-x-auto"><table class="db" id="tbl"></table></div>
+      </div>
+      <div>
+        <div class="mono text-xs text-slate-400 mb-1"><span class="lang-zh">結果</span><span class="lang-en hidden">Result</span></div>
+        <div class="overflow-x-auto"><table class="db" id="res"></table></div>
+      </div>
+    </div>
+
+    <div class="mt-4 text-xs text-slate-500 dark:text-slate-400 leading-relaxed border-t border-slate-300 dark:border-slate-700 pt-3">
+      <span class="lang-zh"><b style="color:var(--ac)">聚合函數</b>把多筆記錄的某欄「摘要」成單一數值:<b class="mono">COUNT</b> 計數、<b class="mono">SUM</b> 求和、<b class="mono">AVG</b> 平均、<b class="mono">MAX/MIN</b> 最大最小。加上 <b class="mono">GROUP BY</b>,就會先按某欄<b>分組</b>,再對每組分別計算 —— 例如各班的平均分。左表以顏色標示分組。</span>
+      <span class="lang-en hidden"><b style="color:var(--ac)">Aggregate functions</b> summarise a column across many records into one value: <b class="mono">COUNT</b>, <b class="mono">SUM</b>, <b class="mono">AVG</b>, <b class="mono">MAX/MIN</b>. Add <b class="mono">GROUP BY</b> to first split rows into <b>groups</b> by a column, then compute per group — e.g. the average score of each class. Colours on the left mark the groups.</span>
+    </div>
+  </div>
+</div>
+
+<script>
+ let __isDark=true,__lang='zh';
+ function applyLang(){document.querySelectorAll('.lang-zh').forEach(e=>e.classList.toggle('hidden',__lang!=='zh'));document.querySelectorAll('.lang-en').forEach(e=>e.classList.toggle('hidden',__lang!=='en'));}
+ function toggleTheme(){__isDark=!__isDark;document.body.classList.toggle('dark',__isDark);document.getElementById('theme-ic').innerHTML=`<i data-lucide="${__isDark?'sun':'moon'}" width="16" height="16"></i>`;if(window.lucide)lucide.createIcons();}
+ function toggleLang(){__lang=__lang==='zh'?'en':'zh';document.getElementById('lang-label').textContent=__lang==='zh'?'EN':'中';applyLang();}
+</script>
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const COLS=['StudentID','Name','Class','Gender','Score'];
+  const ROWS=[
+    ['S001','Chan','5A','M',88],['S002','Lee','5A','F',72],['S003','Wong','5B','F',95],
+    ['S004','Cheung','5B','M',64],['S005','Lam','5A','M',81],['S006','Ng','5B','F',77],
+  ];
+  function agg(fn,vals){ if(!vals.length)return 0; switch(fn){
+    case'COUNT':return vals.length; case'SUM':return vals.reduce((a,b)=>a+b,0);
+    case'AVG':return Math.round(vals.reduce((a,b)=>a+b,0)/vals.length*10)/10;
+    case'MAX':return Math.max(...vals); case'MIN':return Math.min(...vals);} }
+  function render(){
+    const fn=$('fn').value, gben=$('gben').checked, gb=$('gbcol').value;
+    const gci=COLS.indexOf(gb);
+    // groups
+    let groups={};
+    if(gben){ ROWS.forEach(r=>{ (groups[r[gci]]=groups[r[gci]]||[]).push(r); }); }
+    else groups={'*':ROWS};
+    const gkeys=Object.keys(groups);
+    // sql
+    let sql=`<span class="kw">SELECT</span> ${gben?gb+', ':''}<span class="fn">${fn}</span>(Score)\n<span class="kw">FROM</span> STUDENT`;
+    if(gben) sql+=`\n<span class="kw">GROUP BY</span> ${gb}`;
+    sql+=';'; $('sql').innerHTML=sql;
+    // colour map for groups
+    const colorOf={}; gkeys.forEach((k,i)=>colorOf[k]='g'+(i%3));
+    // source table
+    let h='<thead><tr>'+COLS.map(c=>`<th>${c}</th>`).join('')+'</tr></thead><tbody>';
+    h+=ROWS.map(r=>{ const cls=gben?colorOf[r[gci]]:''; return `<tr class="${cls}">`+r.map(v=>`<td>${v}</td>`).join('')+'</tr>'; }).join('');
+    h+='</tbody>'; $('tbl').innerHTML=h;
+    // result
+    let rh='<thead><tr>'+(gben?`<th>${gb}</th>`:'')+`<th>${fn}(Score)</th></tr></thead><tbody>`;
+    rh+=gkeys.map(k=>{ const vals=groups[k].map(r=>r[4]); const cls=gben?colorOf[k]:''; return `<tr class="${cls}">`+(gben?`<td>${k}</td>`:'')+`<td style="color:var(--ac);font-weight:700">${agg(fn,vals)}</td></tr>`; }).join('');
+    rh+='</tbody>'; $('res').innerHTML=rh;
+  }
+  ['fn','gben','gbcol'].forEach(id=>{ $(id).addEventListener('change',render); });
+  render();
+  if(window.lucide)lucide.createIcons();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ER 實體關係圖 · Entity-Relationship Diagram</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={darkMode:'class',theme:{extend:{}}}</script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+HK:wght@300;400;500;700&family=Noto+Serif+HK:wght@400;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+ :root{ color-scheme:light dark; --ac:#8b5cf6; }
+ body{ font-family:'Noto Sans HK',sans-serif; line-height:1.6; -webkit-font-smoothing:antialiased; transition:background-color .3s; }
+ .serif-font{ font-family:'Noto Serif HK',serif; } .mono{ font-family:'JetBrains Mono',ui-monospace,monospace; }
+ .bp-surface{ background-color:#eaeef3; background-image:linear-gradient(rgba(37,99,235,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,.05) 1px,transparent 1px),linear-gradient(rgba(37,99,235,.10) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,.10) 1px,transparent 1px); background-size:26px 26px,26px 26px,130px 130px,130px 130px; }
+ body.dark .bp-surface{ background-color:#0a1626; background-image:linear-gradient(rgba(56,189,248,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.06) 1px,transparent 1px),linear-gradient(rgba(56,189,248,.11) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.11) 1px,transparent 1px); background-size:26px 26px,26px 26px,130px 130px,130px 130px; }
+ .bp-panel{ position:relative;border:1px solid #c3ccd8;border-radius:3px;background:linear-gradient(rgba(255,255,255,.78),rgba(255,255,255,.78)); }
+ body.dark .bp-panel{ border-color:#2c3e57;background:linear-gradient(rgba(13,25,43,.6),rgba(13,25,43,.6)); }
+ .tk{ position:absolute;width:10px;height:10px;color:var(--ac);opacity:.6;pointer-events:none; }
+ .tk.tl{ top:6px;left:6px;border-top:1.5px solid;border-left:1.5px solid; } .tk.tr{ top:6px;right:6px;border-top:1.5px solid;border-right:1.5px solid; }
+ .tk.bl{ bottom:6px;left:6px;border-bottom:1.5px solid;border-left:1.5px solid; } .tk.br{ bottom:6px;right:6px;border-bottom:1.5px solid;border-right:1.5px solid; }
+ .bp-bar{ position:fixed;top:12px;z-index:2147483647;display:inline-flex;align-items:center;gap:8px; }
+ .bp-btn{ display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:6px;border:1px solid #c3ccd8;background:rgba(255,255,255,.85);color:#334155;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.06em;text-decoration:none;cursor:pointer;box-shadow:0 2px 10px rgba(2,6,23,.12);transition:border-color .2s,color .2s; }
+ .bp-btn:hover{ border-color:var(--ac);color:#0f172a; } body.dark .bp-btn{ background:rgba(10,22,38,.85);border-color:#2c3e57;color:#cbd5e1; } body.dark .bp-btn:hover{ border-color:var(--ac);color:#fff; }
+ .legend span{ display:inline-flex;align-items:center;gap:5px;margin-right:12px;font-size:.72rem; }
+ .swatch{ width:20px;height:13px;border:1.5px solid var(--ac); }
+</style>
+</head>
+<body class="dark bp-surface text-slate-800 dark:text-slate-200 p-4 select-none min-h-screen">
+
+<a href="../../ict.html" class="bp-bar bp-btn" style="left:12px"><i data-lucide="home" width="15" height="15"></i><span>INDEX</span></a>
+<div class="bp-bar" style="right:12px">
+  <button onclick="toggleTheme()" class="bp-btn"><span id="theme-ic"><i data-lucide="sun" width="16" height="16"></i></span></button>
+  <button onclick="toggleLang()" class="bp-btn"><i data-lucide="languages" width="15" height="15"></i><span id="lang-label">EN</span></button>
+</div>
+
+<div class="max-w-4xl mx-auto bp-panel rounded-md shadow-lg overflow-hidden mt-14 sm:mt-2">
+  <span class="tk tl"></span><span class="tk tr"></span><span class="tk bl"></span><span class="tk br"></span>
+  <div class="px-5 py-4 border-b border-slate-300 dark:border-slate-700 flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <span class="mono text-[11px] font-bold tracking-[0.18em] uppercase" style="color:var(--ac)">FIG.46</span>
+      <h1 class="serif-font text-xl sm:text-2xl font-bold text-slate-900 dark:text-white"><span class="lang-zh">ER 實體關係圖</span><span class="lang-en hidden">Entity-Relationship Diagram</span></h1>
+    </div>
+    <span class="mono hidden sm:inline text-[10.5px] tracking-[0.16em] uppercase text-slate-400 dark:text-slate-500">選修A · ER Model</span>
+  </div>
+
+  <div class="p-5 sm:p-6">
+    <div class="flex flex-wrap items-center gap-2 mb-3">
+      <span class="mono text-[10px] tracking-[0.2em] uppercase text-slate-400"><span class="lang-zh">關係基數</span><span class="lang-en hidden">Cardinality</span></span>
+      <button onclick="setC('11')" id="c-11" class="bp-btn">1 : 1</button>
+      <button onclick="setC('1m')" id="c-1m" class="bp-btn">1 : M</button>
+      <button onclick="setC('mn')" id="c-mn" class="bp-btn">M : N</button>
+    </div>
+
+    <div class="legend mb-2 text-slate-500 dark:text-slate-400">
+      <span><span class="swatch" style="border-radius:0"></span><span class="lang-zh">實體</span><span class="lang-en hidden">Entity</span></span>
+      <span><span class="swatch" style="transform:rotate(45deg);width:14px;height:14px"></span><span class="lang-zh">關係</span><span class="lang-en hidden">Relationship</span></span>
+      <span><span class="swatch" style="border-radius:99px"></span><span class="lang-zh">屬性</span><span class="lang-en hidden">Attribute</span></span>
+    </div>
+
+    <div class="bp-panel rounded p-2 mb-4"><svg id="er" viewBox="0 0 520 300" class="w-full"></svg></div>
+
+    <div id="explain" class="bp-panel rounded p-3 text-sm" style="min-height:3.5rem"></div>
+
+    <div class="mt-4 text-xs text-slate-500 dark:text-slate-400 leading-relaxed border-t border-slate-300 dark:border-slate-700 pt-3">
+      <span class="lang-zh"><b style="color:var(--ac)">ER 模型</b>在設計數據庫時,以圖描述現實:<b>實體 (矩形)</b> 是要儲存的事物,<b>屬性 (橢圓)</b> 是其特性 (下橫線為主鍵),<b>關係 (菱形)</b> 連接實體。<b>基數 (cardinality)</b> 說明一方可對應另一方多少個:<b>1:1</b>、<b>1:M</b>、<b>M:N</b>。M:N 關係在轉為表格時,需要一個<b>連接表</b>拆解。</span>
+      <span class="lang-en hidden">The <b style="color:var(--ac)">ER model</b> designs a database by drawing reality: <b>entities (rectangles)</b> are things to store, <b>attributes (ovals)</b> are their properties (underlined = primary key), and <b>relationships (diamonds)</b> link entities. <b>Cardinality</b> says how many of one side relate to the other: <b>1:1</b>, <b>1:M</b>, <b>M:N</b>. An M:N relationship needs a <b>link (junction) table</b> when turned into tables.</span>
+    </div>
+  </div>
+</div>
+
+<script>
+ let __isDark=true,__lang='zh';
+ function applyLang(){document.querySelectorAll('.lang-zh').forEach(e=>e.classList.toggle('hidden',__lang!=='zh'));document.querySelectorAll('.lang-en').forEach(e=>e.classList.toggle('hidden',__lang!=='en'));}
+ function toggleTheme(){__isDark=!__isDark;document.body.classList.toggle('dark',__isDark);document.getElementById('theme-ic').innerHTML=`<i data-lucide="${__isDark?'sun':'moon'}" width="16" height="16"></i>`;if(window.lucide)lucide.createIcons();draw();}
+ function toggleLang(){__lang=__lang==='zh'?'en':'zh';document.getElementById('lang-label').textContent=__lang==='zh'?'EN':'中';applyLang();draw();}
+</script>
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  let card='1m';
+  const SC={
+    '11':{l:'1',r:'1',ent:['STUDENT','LOCKER'],rel:'ASSIGNED',
+      zh:'一名學生對應一個儲物櫃,一個櫃只屬一名學生 → <b>1:1</b>。',en:'One student to one locker, and each locker to one student → <b>1:1</b>.'},
+    '1m':{l:'1',r:'M',ent:['CLASS','STUDENT'],rel:'CONTAINS',
+      zh:'一個班別有多名學生,但每名學生只屬一個班別 → <b>1:M</b> (最常見)。',en:'One class has many students, but each student is in one class → <b>1:M</b> (most common).'},
+    'mn':{l:'M',r:'N',ent:['STUDENT','COURSE'],rel:'ENROLS',
+      zh:'一名學生可選多科,一科亦有多名學生 → <b>M:N</b>,實作時需<b>連接表</b> ENROLMENT。',en:'A student takes many courses and a course has many students → <b>M:N</b>, needing a <b>link table</b> ENROLMENT.'},
+  };
+  function box(x,y,w,h,label,shape){
+    const ink=__isDark?'#0d192b':'#fff', stroke='#8b5cf6', tx=__isDark?'#e2e8f0':'#1e293b';
+    if(shape==='diamond'){ const cx=x+w/2,cy=y+h/2; return `<polygon points="${cx},${y} ${x+w},${cy} ${cx},${y+h} ${x},${cy}" fill="${ink}" stroke="${stroke}" stroke-width="2"/><text x="${cx}" y="${cy+4}" font-size="12" text-anchor="middle" font-family="monospace" font-weight="700" fill="${tx}">${label}</text>`; }
+    if(shape==='oval'){ return `<ellipse cx="${x+w/2}" cy="${y+h/2}" rx="${w/2}" ry="${h/2}" fill="${ink}" stroke="${stroke}" stroke-width="1.6"/><text x="${x+w/2}" y="${y+h/2+3}" font-size="9.5" text-anchor="middle" font-family="monospace" fill="${tx}">${label}</text>`; }
+    return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" fill="${ink}" stroke="${stroke}" stroke-width="2"/><text x="${x+w/2}" y="${y+h/2+4}" font-size="12.5" text-anchor="middle" font-family="monospace" font-weight="700" fill="${tx}">${label}</text>`;
+  }
+  function line(x1,y1,x2,y2){ return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${__isDark?'#64748b':'#94a3b8'}" stroke-width="1.8"/>`; }
+  function draw(){
+    const s=SC[card]; const ac='#8b5cf6', tx=__isDark?'#c4b5fd':'#7c3aed';
+    let g='';
+    // entities left & right
+    g+=line(120,150,220,150); g+=line(300,150,400,150);
+    // cardinality labels near diamond
+    g+=`<text x="200" y="140" font-size="14" text-anchor="middle" font-weight="700" fill="${tx}" font-family="monospace">${s.l}</text>`;
+    g+=`<text x="320" y="140" font-size="14" text-anchor="middle" font-weight="700" fill="${tx}" font-family="monospace">${s.r}</text>`;
+    g+=box(20,125,100,50,s.ent[0],'rect');
+    g+=box(220,120,80,60,s.rel,'diamond');
+    g+=box(400,125,100,50,s.ent[1],'rect');
+    // attributes for left entity
+    g+=line(70,125,50,80); g+=box(20,58,60,26,'id','oval');
+    g+=line(90,125,110,80); g+=box(85,58,66,26,'name','oval');
+    // attributes for right entity
+    g+=line(450,125,470,80); g+=box(440,58,60,26,'id','oval');
+    g+=line(430,125,410,80); g+=box(370,58,66,26,'name','oval');
+    // underline PK on the 'id' ovals
+    g+=`<line x1="42" y1="76" x2="58" y2="76" stroke="${tx}" stroke-width="1.4"/>`;
+    g+=`<line x1="462" y1="76" x2="478" y2="76" stroke="${tx}" stroke-width="1.4"/>`;
+    $('er').innerHTML=g;
+    ['11','1m','mn'].forEach(k=>$('c-'+k).style.borderColor= k===card?'var(--ac)':'');
+    $('explain').innerHTML=`<span class="lang-zh ${__lang!=='zh'?'hidden':''}">${s.zh}</span><span class="lang-en ${__lang!=='en'?'hidden':''}">${s.en}</span>`;
+  }
+  window.setC=(c)=>{ card=c; draw(); };
+  window.draw=draw; draw();
+  if(window.lucide)lucide.createIcons();
+})();
+</script>
+</body>
+</html>

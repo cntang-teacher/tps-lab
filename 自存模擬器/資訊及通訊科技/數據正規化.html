@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>數據正規化 · Database Normalization</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={darkMode:'class',theme:{extend:{}}}</script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+HK:wght@300;400;500;700&family=Noto+Serif+HK:wght@400;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+ :root{ color-scheme:light dark; --ac:#8b5cf6; }
+ body{ font-family:'Noto Sans HK',sans-serif; line-height:1.6; -webkit-font-smoothing:antialiased; transition:background-color .3s; }
+ .serif-font{ font-family:'Noto Serif HK',serif; } .mono{ font-family:'JetBrains Mono',ui-monospace,monospace; }
+ .bp-surface{ background-color:#eaeef3; background-image:linear-gradient(rgba(37,99,235,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,.05) 1px,transparent 1px),linear-gradient(rgba(37,99,235,.10) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,.10) 1px,transparent 1px); background-size:26px 26px,26px 26px,130px 130px,130px 130px; }
+ body.dark .bp-surface{ background-color:#0a1626; background-image:linear-gradient(rgba(56,189,248,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.06) 1px,transparent 1px),linear-gradient(rgba(56,189,248,.11) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.11) 1px,transparent 1px); background-size:26px 26px,26px 26px,130px 130px,130px 130px; }
+ .bp-panel{ position:relative;border:1px solid #c3ccd8;border-radius:3px;background:linear-gradient(rgba(255,255,255,.78),rgba(255,255,255,.78)); }
+ body.dark .bp-panel{ border-color:#2c3e57;background:linear-gradient(rgba(13,25,43,.6),rgba(13,25,43,.6)); }
+ .tk{ position:absolute;width:10px;height:10px;color:var(--ac);opacity:.6;pointer-events:none; }
+ .tk.tl{ top:6px;left:6px;border-top:1.5px solid;border-left:1.5px solid; } .tk.tr{ top:6px;right:6px;border-top:1.5px solid;border-right:1.5px solid; }
+ .tk.bl{ bottom:6px;left:6px;border-bottom:1.5px solid;border-left:1.5px solid; } .tk.br{ bottom:6px;right:6px;border-bottom:1.5px solid;border-right:1.5px solid; }
+ .bp-bar{ position:fixed;top:12px;z-index:2147483647;display:inline-flex;align-items:center;gap:8px; }
+ .bp-btn{ display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:6px;border:1px solid #c3ccd8;background:rgba(255,255,255,.85);color:#334155;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.06em;text-decoration:none;cursor:pointer;box-shadow:0 2px 10px rgba(2,6,23,.12);transition:border-color .2s,color .2s; }
+ .bp-btn:hover{ border-color:var(--ac);color:#0f172a; } body.dark .bp-btn{ background:rgba(10,22,38,.85);border-color:#2c3e57;color:#cbd5e1; } body.dark .bp-btn:hover{ border-color:var(--ac);color:#fff; }
+ .tbox{ border:1px solid #c3ccd8;border-radius:8px;overflow:hidden;min-width:0; } body.dark .tbox{ border-color:#2c3e57; }
+ .tbox .th{ background:rgba(139,92,246,.14);padding:5px 10px;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.8rem;color:var(--ac); }
+ .tbox .fld{ padding:3px 10px;font-family:'JetBrains Mono',monospace;font-size:.74rem;border-top:1px dashed #c3ccd8; } body.dark .tbox .fld{ border-color:#2c3e57; }
+ .pk{ text-decoration:underline;font-weight:700; } .fk{ color:var(--ac);font-style:italic; }
+ .newt{ animation:pop .4s ease; } @keyframes pop{ from{ transform:scale(.9);opacity:0; } to{ transform:scale(1);opacity:1; } }
+ .stepdot{ width:2.2rem;height:2.2rem;border-radius:99px;border:2px solid #c3ccd8;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.72rem; } body.dark .stepdot{ border-color:#2c3e57; }
+ .stepdot.on{ border-color:var(--ac);background:var(--ac);color:#fff; } .stepdot.done{ border-color:var(--ac);color:var(--ac); }
+</style>
+</head>
+<body class="dark bp-surface text-slate-800 dark:text-slate-200 p-4 select-none min-h-screen">
+
+<a href="../../ict.html" class="bp-bar bp-btn" style="left:12px"><i data-lucide="home" width="15" height="15"></i><span>INDEX</span></a>
+<div class="bp-bar" style="right:12px">
+  <button onclick="toggleTheme()" class="bp-btn"><span id="theme-ic"><i data-lucide="sun" width="16" height="16"></i></span></button>
+  <button onclick="toggleLang()" class="bp-btn"><i data-lucide="languages" width="15" height="15"></i><span id="lang-label">EN</span></button>
+</div>
+
+<div class="max-w-4xl mx-auto bp-panel rounded-md shadow-lg overflow-hidden mt-14 sm:mt-2">
+  <span class="tk tl"></span><span class="tk tr"></span><span class="tk bl"></span><span class="tk br"></span>
+  <div class="px-5 py-4 border-b border-slate-300 dark:border-slate-700 flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <span class="mono text-[11px] font-bold tracking-[0.18em] uppercase" style="color:var(--ac)">FIG.47</span>
+      <h1 class="serif-font text-xl sm:text-2xl font-bold text-slate-900 dark:text-white"><span class="lang-zh">數據正規化</span><span class="lang-en hidden">Database Normalization</span></h1>
+    </div>
+    <span class="mono hidden sm:inline text-[10.5px] tracking-[0.16em] uppercase text-slate-400 dark:text-slate-500">選修A · 1NF→3NF</span>
+  </div>
+
+  <div class="p-5 sm:p-6">
+    <div class="flex items-center gap-2 mb-4">
+      <div class="stepdot" id="d-0">UNF</div><div class="flex-1 h-px bg-slate-300 dark:bg-slate-700"></div>
+      <div class="stepdot" id="d-1">1NF</div><div class="flex-1 h-px bg-slate-300 dark:bg-slate-700"></div>
+      <div class="stepdot" id="d-2">2NF</div><div class="flex-1 h-px bg-slate-300 dark:bg-slate-700"></div>
+      <div class="stepdot" id="d-3">3NF</div>
+    </div>
+
+    <div class="bp-panel rounded p-3 mb-4">
+      <div class="flex items-center gap-2 mb-1"><span id="stagename" class="serif-font font-bold" style="color:var(--ac)"></span></div>
+      <div id="rule" class="text-sm"></div>
+    </div>
+
+    <div id="tables" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4"></div>
+
+    <div class="flex gap-2">
+      <button onclick="prev()" id="prevbtn" class="bp-btn"><i data-lucide="arrow-left" width="14" height="14"></i><span class="lang-zh">上一步</span><span class="lang-en hidden">Back</span></button>
+      <button onclick="next()" id="nextbtn" class="bp-btn" style="border-color:var(--ac)"><span class="lang-zh">正規化 →</span><span class="lang-en hidden">Normalize →</span><i data-lucide="arrow-right" width="14" height="14"></i></button>
+    </div>
+
+    <div class="mt-4 text-xs text-slate-500 dark:text-slate-400 leading-relaxed border-t border-slate-300 dark:border-slate-700 pt-3">
+      <span class="lang-zh"><b style="color:var(--ac)">正規化</b>逐步拆解表格,消除重複與異常。<b>1NF</b>:每格只存單一(原子)值,消除<b>重複組</b>。<b>2NF</b>:在 1NF 上,消除<b>部分依賴</b>(非主鍵屬性須依賴整個複合主鍵)。<b>3NF</b>:在 2NF 上,消除<b>傳遞依賴</b>(非主鍵屬性不可依賴另一非主鍵屬性)。結果減少<b>冗餘</b>,避免更新/插入/刪除異常。<span class="pk">底線</span>=主鍵,<span class="fk">斜體</span>=外鍵。</span>
+      <span class="lang-en hidden"><b style="color:var(--ac)">Normalization</b> splits tables step by step to remove redundancy and anomalies. <b>1NF</b>: each cell holds one atomic value — remove <b>repeating groups</b>. <b>2NF</b>: on top of 1NF, remove <b>partial dependencies</b> (non-key attributes must depend on the whole composite key). <b>3NF</b>: on top of 2NF, remove <b>transitive dependencies</b> (a non-key attribute must not depend on another non-key attribute). The result cuts <b>redundancy</b> and avoids update/insert/delete anomalies. <span class="pk">Underline</span>=PK, <span class="fk">italic</span>=FK.</span>
+    </div>
+  </div>
+</div>
+
+<script>
+ let __isDark=true,__lang='zh';
+ function applyLang(){document.querySelectorAll('.lang-zh').forEach(e=>e.classList.toggle('hidden',__lang!=='zh'));document.querySelectorAll('.lang-en').forEach(e=>e.classList.toggle('hidden',__lang!=='en'));}
+ function toggleTheme(){__isDark=!__isDark;document.body.classList.toggle('dark',__isDark);document.getElementById('theme-ic').innerHTML=`<i data-lucide="${__isDark?'sun':'moon'}" width="16" height="16"></i>`;if(window.lucide)lucide.createIcons();}
+ function toggleLang(){__lang=__lang==='zh'?'en':'zh';document.getElementById('lang-label').textContent=__lang==='zh'?'EN':'中';applyLang();render();}
+</script>
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  // field markup helpers: {name, pk, fk}
+  const F=(n,pk,fk)=>({n,pk,fk});
+  const STAGES=[
+    {name:'UNF', title:{zh:'未正規化',en:'Unnormalized'},
+     rule:{zh:'一筆學生記錄塞入<b>多科課程</b>(重複組),Course 欄位不是原子值。',en:'One student record crams in <b>many courses</b> (a repeating group); Course is not atomic.'},
+     tables:[{t:'ENROLMENT',fs:[F('StudentID',1),F('StudentName'),F('Class'),F('ClassTeacher'),F('(CourseID, CourseName, Grade)…')]}]},
+    {name:'1NF', title:{zh:'第一正規形',en:'First Normal Form'},
+     rule:{zh:'把重複組拆成獨立記錄,每格<b>原子化</b>。主鍵變成複合鍵 (StudentID + CourseID)。',en:'Split the repeating group into separate rows; every cell is now <b>atomic</b>. The key becomes composite (StudentID + CourseID).'},
+     tables:[{t:'ENROLMENT',fs:[F('StudentID',1),F('CourseID',1),F('StudentName'),F('Class'),F('ClassTeacher'),F('CourseName'),F('Grade')]}]},
+    {name:'2NF', title:{zh:'第二正規形',en:'Second Normal Form'},
+     rule:{zh:'消除<b>部分依賴</b>:StudentName/Class/ClassTeacher 只靠 StudentID;CourseName 只靠 CourseID。各自拆表。',en:'Remove <b>partial dependencies</b>: StudentName/Class/ClassTeacher depend on StudentID only; CourseName on CourseID only. Split them out.'},
+     tables:[
+       {t:'STUDENT',fs:[F('StudentID',1),F('StudentName'),F('Class'),F('ClassTeacher')]},
+       {t:'COURSE',fs:[F('CourseID',1),F('CourseName')]},
+       {t:'ENROLMENT',fs:[F('StudentID',1,1),F('CourseID',1,1),F('Grade')]},
+     ]},
+    {name:'3NF', title:{zh:'第三正規形',en:'Third Normal Form'},
+     rule:{zh:'消除<b>傳遞依賴</b>:ClassTeacher 依賴 Class(非主鍵),而非直接依賴 StudentID。把 Class→ClassTeacher 拆到新表。',en:'Remove <b>transitive dependency</b>: ClassTeacher depends on Class (a non-key), not directly on StudentID. Move Class→ClassTeacher to its own table.'},
+     tables:[
+       {t:'STUDENT',fs:[F('StudentID',1),F('StudentName'),F('Class',0,1)]},
+       {t:'CLASS',fs:[F('Class',1),F('ClassTeacher')]},
+       {t:'COURSE',fs:[F('CourseID',1),F('CourseName')]},
+       {t:'ENROLMENT',fs:[F('StudentID',1,1),F('CourseID',1,1),F('Grade')]},
+     ]},
+  ];
+  let step=0;
+  function render(){
+    const s=STAGES[step];
+    for(let i=0;i<4;i++){ const d=$('d-'+i); d.className='stepdot'+(i===step?' on':i<step?' done':''); }
+    $('stagename').textContent=s.name+' · '+(__lang==='zh'?s.title.zh:s.title.en);
+    $('rule').innerHTML=`<span class="lang-zh ${__lang!=='zh'?'hidden':''}">${s.rule.zh}</span><span class="lang-en ${__lang!=='en'?'hidden':''}">${s.rule.en}</span>`;
+    $('tables').innerHTML=s.tables.map(tb=>`<div class="tbox newt"><div class="th">${tb.t}</div>${tb.fs.map(f=>`<div class="fld"><span class="${f.pk?'pk':''} ${f.fk?'fk':''}">${f.n}</span>${f.pk?' 🔑':''}${f.fk?' ↗':''}</div>`).join('')}</div>`).join('');
+    $('prevbtn').disabled=step===0; $('prevbtn').style.opacity=step===0?'.4':'1';
+    $('nextbtn').disabled=step===3; $('nextbtn').style.opacity=step===3?'.4':'1';
+    if(step===3) $('nextbtn').innerHTML=`<span class="lang-zh ${__lang!=='zh'?'hidden':''}">已達 3NF ✓</span><span class="lang-en ${__lang!=='en'?'hidden':''}">3NF reached ✓</span>`;
+    else $('nextbtn').innerHTML=`<span class="lang-zh ${__lang!=='zh'?'hidden':''}">正規化 →</span><span class="lang-en ${__lang!=='en'?'hidden':''}">Normalize →</span><i data-lucide="arrow-right" width="14" height="14"></i>`;
+    if(window.lucide)lucide.createIcons();
+  }
+  window.next=()=>{ if(step<3){ step++; render(); } };
+  window.prev=()=>{ if(step>0){ step--; render(); } };
+  render();
+  if(window.lucide)lucide.createIcons();
+})();
+</script>
+</body>
+</html>
